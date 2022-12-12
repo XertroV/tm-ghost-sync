@@ -10,6 +10,20 @@ void MainCoro() {
     }
 }
 
+// light / mid-light / mid gray
+const string lg = "\\$ddd";
+const string mlg = "\\$bbb";
+const string mg = "\\$999";
+const string MENU_NAME = lg + Icons::User + mlg + Icons::ArrowsH + mg + Icons::SnapchatGhost + " \\$z" + Meta::ExecutingPlugin().Name;
+
+/** Render function called every frame intended only for menu items in `UI`. */
+void RenderMenu() {
+    if (UI::MenuItem(MENU_NAME, "", S_Enabled)) {
+        S_Enabled = !S_Enabled;
+    }
+}
+
+
 bool PlaygroundScriptNull {
     get {
         return GetApp().PlaygroundScript is null;
@@ -54,7 +68,7 @@ void SyncGhosts(const MLFeed::PlayerCpInfo_V2@ player) {
     auto ps = cast<CSmArenaRulesMode>(GetApp().PlaygroundScript);
     if (ps is null) return;
     auto gd = MLFeed::GetGhostData();
-    Notify("Syncing ghosts.");
+    // Notify("Syncing ghosts.");
 
     int ghostTime;
     // we want to set the ghosts start time according to the mode.
@@ -62,7 +76,7 @@ void SyncGhosts(const MLFeed::PlayerCpInfo_V2@ player) {
         // in this mode, when the player loses X seconds to a respawn, we rewind the ghost by X seconds.
         ghostTime = player.CpCount == 0 ? 0 : (player.CurrentRaceTime - player.TimeLostToRespawns);
         ps.Ghosts_SetStartTime(ps.Now - ghostTime);
-        Notify("Start time: " + (ps.Now - ghostTime));
+        // Notify("Start time: " + (ps.Now - ghostTime));
     } else if (S_Mode == Mode::SyncGhostToCheckpoint) {
         // in this mode, when the player passes through a checkpoint or respawns, we rewind the ghost to the point that it went through the same checkpoint.
         // mode disabled atm b/c can't be selected via settings
