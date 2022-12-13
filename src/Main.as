@@ -55,7 +55,7 @@ void OnEnteredPlayground() {
     while (!PlaygroundScriptNull && gd.Ghosts_V2.Length == 0) yield();
     // main loop
     uint lastRespawns = localPlayer.NbRespawnsRequested;
-    uint lastCPs = localPlayer.CpCount;
+    int lastCPs = localPlayer.CpCount;
     uint lastStartTime = localPlayer.StartTime;
     while (S_Enabled && !PlaygroundScriptNull && GetApp().RootMap !is null && mapUid == GetApp().RootMap.MapInfo.MapUid) {
         yield();
@@ -88,7 +88,7 @@ void SyncGhosts(const MLFeed::PlayerCpInfo_V2@ player) {
     } else if (S_Mode == Mode::SyncGhostToCheckpoint) {
         // in this mode, when the player passes through a checkpoint or respawns, we rewind the ghost to the point that it went through the same checkpoint.
         // we don't want to do anything if the player finished
-        bool playerFinished = player.CpCount == MLFeed::GetRaceData_V2().CPsToFinish;
+        bool playerFinished = player.CpCount == int(MLFeed::GetRaceData_V2().CPsToFinish);
         if (playerFinished) return;
         // if the player reset, we want to set the ghost starting time
         if (player.CurrentRaceTime < 0) {
