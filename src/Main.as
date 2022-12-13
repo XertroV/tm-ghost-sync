@@ -18,11 +18,19 @@ const string MENU_NAME = lg + Icons::User + mlg + Icons::ArrowsH + mg + Icons::S
 
 /** Render function called every frame intended only for menu items in `UI`. */
 void RenderMenu() {
-    if (UI::MenuItem(MENU_NAME, "", S_Enabled)) {
-        S_Enabled = !S_Enabled;
+    if (UI::BeginMenu(MENU_NAME)) {
+        if (UI::MenuItem("Enabled", "", S_Enabled)) {
+            S_Enabled = !S_Enabled;
+        }
+        if (UI::MenuItem("Sync to No-Respawn Time", "", S_Mode == Mode::SyncGhostToNoRespawnTime)) {
+            S_Mode = S_Mode == Mode::SyncGhostToNoRespawnTime ? Mode::SyncGhostToCheckpoint : Mode::SyncGhostToNoRespawnTime;
+        }
+        if (UI::MenuItem("Sync to Checkpoints", "", S_Mode == Mode::SyncGhostToCheckpoint)) {
+            S_Mode = S_Mode == Mode::SyncGhostToNoRespawnTime ? Mode::SyncGhostToCheckpoint : Mode::SyncGhostToNoRespawnTime;
+        }
+        UI::EndMenu();
     }
 }
-
 
 bool PlaygroundScriptNull {
     get {
@@ -52,6 +60,7 @@ void OnEnteredPlayground() {
     while (S_Enabled && !PlaygroundScriptNull && GetApp().RootMap !is null && mapUid == GetApp().RootMap.MapInfo.MapUid) {
         yield();
         if (rd.SortedPlayers_Race.Length == 0) break;
+        // we're always the 1st player in solo
         @localPlayer = rd.SortedPlayers_Race[0];
         // watch for respawns or CPs
         if (lastRespawns == localPlayer.NbRespawnsRequested && lastCPs == localPlayer.CpCount && lastStartTime == localPlayer.StartTime) continue;
@@ -59,8 +68,6 @@ void OnEnteredPlayground() {
         lastRespawns = localPlayer.NbRespawnsRequested;
         lastCPs = localPlayer.CpCount;
         lastStartTime = localPlayer.StartTime;
-        // ignore if we're setting back to 0 -- server handles ghost sync
-        // if (lastRespawns == 0 && lastCPs == 0) continue;
         // when a player respawns, sync ghosts
         SyncGhosts(localPlayer);
     }
@@ -78,19 +85,28 @@ void SyncGhosts(const MLFeed::PlayerCpInfo_V2@ player) {
     if (S_Mode == Mode::SyncGhostToNoRespawnTime) {
         // in this mode, when the player loses X seconds to a respawn, we rewind the ghost by X seconds.
         ps.Ghosts_SetStartTime(ps.Now - ghostTime);
-        // Notify("Start time: " + (ps.Now - ghostTime));
     } else if (S_Mode == Mode::SyncGhostToCheckpoint) {
         // in this mode, when the player passes through a checkpoint or respawns, we rewind the ghost to the point that it went through the same checkpoint.
-        // mode disabled atm b/c can't be selected via settings
-        throw('todo');
+        // we don't want to do anything if the player finished
+        bool playerFinished = player.CpCount == MLFeed::GetRaceData_V2().CPsToFinish;
+        if (playerFinished) return;
+        // if the player reset, we want to set the ghost starting time
+        if (player.CurrentRaceTime < 0) {
+            ps.Ghosts_SetStartTime(player.StartTime);
+        }
+        // first, remove all previous temporary ghosts (note: this removes other ghosts too, but you probably only have the ones you care about actually on.)
+        ps.Ghost_RemoveAll();
+        // efficiently (O(n)) search ghosts for cp data and update
         if (GetApp().Network.ClientManiaAppPlayground is null) return;
         auto dfm = GetApp().Network.ClientManiaAppPlayground.DataFileMgr;
         if (dfm is null) return;
         // indexes for ghost info and ghosts. They might not line up exactly, but they will be in the same order.
         uint gi = 0, g = 0;
+        bool foundPB = false;
         while (gi < gd.Ghosts_V2.Length && g < dfm.Ghosts.Length) {
             auto ghost = dfm.Ghosts[g];
             auto ghostInfo = gd.Ghosts_V2[gi];
+            foundPB = foundPB || ghostInfo.IsPersonalBest;
             if (ghost.Id.Value < ghostInfo.IdUint) {
                 g++;
                 continue;
@@ -98,24 +114,16 @@ void SyncGhosts(const MLFeed::PlayerCpInfo_V2@ player) {
                 gi++;
                 continue;
             } else {
-                // match
-                // ps.Ghost_Remove(ghost.Id);
-                // ghostOffset = player.CurrentRaceTime
-                // ps.Ghost_AddWithOffset(ghost, true, )
+                // the ghost offset is how far ahead behind it should be, relative to players race time.
+                // so the offset is player.CRT - ghost.CRT (generally positive if player is behind ghost)
+                // we only know the ghost CRT at a checkpoint (which is the checkpoint time)
+                int ghostCpTime = player.CpCount == 0 ? 0 : ghostInfo.Checkpoints[player.CpCount - 1];
+                int offset = player.LastCpOrRespawnTime - ghostCpTime;
+                auto newGhostId = ps.Ghost_AddWithOffset(ghost, true, offset);
+                // dev_print("Adding ghost: " + ghostInfo.Nickname + " ("+ghostInfo.IdName+"->"+newGhostId.GetName()+") at cp " + player.CpCount + " with offset (ms): " + offset);
+                g++;
+                gi++;
             }
-        }
-        for (uint g = 0; g < gd.Ghosts_V2.Length; g++) {
-
-            auto ghost = gd.Ghosts_V2[g];
-            ghostTime = player.CpCount > 0 ? ghost.Checkpoints[player.CpCount - 1] : 0;
-            // todo, need to set ghost offset -- do we tho? why?
-            // yes b/c we set the start time for all ghosts
-            // todo: introduce lookup by ID in MLFeed (so we can go from CGhost -> GhostInfo)
-            // wait: ghosts are in same order!
-
-            // that way we can get CP times
-            // then we can set the offset for that particular ghost
-
         }
     }
 }
@@ -124,4 +132,10 @@ void SyncGhosts(const MLFeed::PlayerCpInfo_V2@ player) {
 void Notify(const string &in msg) {
     UI::ShowNotification(Meta::ExecutingPlugin().Name, msg);
     trace("Notified: " + msg);
+}
+
+void dev_print(const string &in msg) {
+#if DEV
+    print(msg);
+#endif
 }
