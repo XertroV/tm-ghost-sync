@@ -42,12 +42,14 @@ void OnEnteredPlayground() {
     if (GetApp().RootMap is null) return;
     auto rd = MLFeed::GetRaceData_V2();
     auto gd = MLFeed::GetGhostData();
+    if (rd is null || gd is null) return;
     string playersName = MLFeed::LocalPlayersName;
     while (playersName == "") {
         yield();
         playersName = MLFeed::LocalPlayersName;
     }
     auto mapUid = GetApp().RootMap.MapInfo.MapUid;
+    if (rd.SortedPlayers_Race is null || gd.Ghosts_V2 is null) return;
     if (rd.SortedPlayers_Race.Length == 0) return;
     auto localPlayer = rd.SortedPlayers_Race[0];
     if (!localPlayer.IsLocalPlayer) warn("MLFeed doesn't think this is the local player");
