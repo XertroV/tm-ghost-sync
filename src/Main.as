@@ -53,8 +53,6 @@ void OnEnteredPlayground() {
     if (rd.SortedPlayers_Race.Length == 0) return;
     auto localPlayer = rd.SortedPlayers_Race[0];
     if (!localPlayer.IsLocalPlayer) warn("MLFeed doesn't think this is the local player");
-    // need ghosts to do anything
-    while (!PlaygroundScriptNull && gd.Ghosts_V2.Length == 0) yield();
     // main loop
     uint lastRespawns = localPlayer.NbRespawnsRequested;
     int lastCPs = localPlayer.CpCount;
