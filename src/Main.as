@@ -44,11 +44,8 @@ void OnEnteredPlayground() {
     auto gd = MLFeed::GetGhostData();
     if (rd is null || gd is null) return;
     string playersName = MLFeed::LocalPlayersName;
-    while (playersName == "") {
-        yield();
-        playersName = MLFeed::LocalPlayersName;
-    }
-    auto mapUid = GetApp().RootMap.MapInfo.MapUid;
+    if (playersName == "") return;
+    auto mapUid = GetApp().RootMap.EdChallengeId;
     if (rd.SortedPlayers_Race is null || gd.Ghosts_V2 is null) return;
     if (rd.SortedPlayers_Race.Length == 0) return;
     auto localPlayer = rd.SortedPlayers_Race[0];
@@ -57,7 +54,7 @@ void OnEnteredPlayground() {
     uint lastRespawns = localPlayer.NbRespawnsRequested;
     int lastCPs = localPlayer.CpCount;
     uint lastStartTime = localPlayer.StartTime;
-    while (S_Enabled && !PlaygroundScriptNull && GetApp().RootMap !is null && mapUid == GetApp().RootMap.MapInfo.MapUid) {
+    while (S_Enabled && !PlaygroundScriptNull && GetApp().RootMap !is null && mapUid == GetApp().RootMap.EdChallengeId) {
         yield();
         if (rd.SortedPlayers_Race.Length == 0) break;
         // we're always the 1st player in solo
