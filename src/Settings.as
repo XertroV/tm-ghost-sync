@@ -7,9 +7,11 @@ enum Mode {
     SyncGhostToCheckpoint
 }
 
-// disable second mode for the moment.
 [Setting hidden]
 Mode S_Mode = Mode::SyncGhostToNoRespawnTime;
+
+[Setting hidden]
+int S_StartGhostEarlyBy = 0;
 
 [SettingsTab name="General" icon="SnapchatGhost"]
 void RenderGeneralSettings() {
@@ -33,6 +35,9 @@ void RenderGeneralSettings() {
     UI::Text("Description");
     UI::TextWrapped(ModeDescription(S_Mode));
     UI::Separator();
+    S_StartGhostEarlyBy = Math::Clamp(UI::InputInt("Ghost Start Offset (ms)", S_StartGhostEarlyBy, 100), -1500, 1500);
+    UI::AlignTextToFramePadding();
+    UI::TextWrapped("Default: 0. When negative, ghosts will start before you. When positive, ghosts will start after you.");
 }
 
 const string ModeDescription(Mode m) {

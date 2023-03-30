@@ -78,10 +78,11 @@ void SyncGhosts(const MLFeed::PlayerCpInfo_V2@ player) {
     // Notify("Syncing ghosts.");
 
     int ghostTime = player.CurrentRaceTime - player.TimeLostToRespawns;
+    int ghostOffs = player.TimeLostToRespawns == 0 ? S_StartGhostEarlyBy : 0;
     // we want to set the ghosts start time according to the mode.
     if (S_Mode == Mode::SyncGhostToNoRespawnTime) {
         // in this mode, when the player loses X seconds to a respawn, we rewind the ghost by X seconds.
-        ps.Ghosts_SetStartTime(ps.Now - ghostTime);
+        ps.Ghosts_SetStartTime(ps.Now - ghostTime + S_StartGhostEarlyBy);
     } else if (S_Mode == Mode::SyncGhostToCheckpoint) {
         // in this mode, when the player passes through a checkpoint or respawns, we rewind the ghost to the point that it went through the same checkpoint.
         // we don't want to do anything if the player finished
@@ -89,7 +90,7 @@ void SyncGhosts(const MLFeed::PlayerCpInfo_V2@ player) {
         if (playerFinished) return;
         // if the player reset, we want to set the ghost starting time
         if (player.CurrentRaceTime < 0) {
-            ps.Ghosts_SetStartTime(player.StartTime);
+            ps.Ghosts_SetStartTime(player.StartTime + S_StartGhostEarlyBy);
         }
         // first, remove all previous temporary ghosts (note: this removes other ghosts too, but you probably only have the ones you care about actually on.)
         ps.Ghost_RemoveAll();
@@ -115,7 +116,7 @@ void SyncGhosts(const MLFeed::PlayerCpInfo_V2@ player) {
                 // so the offset is player.CRT - ghost.CRT (generally positive if player is behind ghost)
                 // we only know the ghost CRT at a checkpoint (which is the checkpoint time)
                 int ghostCpTime = player.CpCount == 0 ? 0 : ghostInfo.Checkpoints[player.CpCount - 1];
-                int offset = player.LastCpOrRespawnTime - ghostCpTime;
+                int offset = player.LastCpOrRespawnTime - ghostCpTime + S_StartGhostEarlyBy;
                 auto newGhostId = ps.Ghost_AddWithOffset(ghost, true, offset);
                 // dev_print("Adding ghost: " + ghostInfo.Nickname + " ("+ghostInfo.IdName+"->"+newGhostId.GetName()+") at cp " + player.CpCount + " with offset (ms): " + offset);
                 g++;
