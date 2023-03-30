@@ -3,6 +3,7 @@ name     = "Ghost Sync"
 author   = "XertroV"
 category = "MLHook"
 version  = "0.1.6"
+siteid   = 288
 
 [script]
 #__DEFINES__
