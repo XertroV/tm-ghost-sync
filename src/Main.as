@@ -48,7 +48,7 @@ void OnEnteredPlayground() {
     auto mapUid = GetApp().RootMap.EdChallengeId;
     if (rd.SortedPlayers_Race is null || gd.Ghosts_V2 is null) return;
     if (rd.SortedPlayers_Race.Length == 0) return;
-    auto localPlayer = rd.SortedPlayers_Race[0];
+    MLFeed::PlayerCpInfo_V2@ localPlayer = rd.SortedPlayers_Race[0];
     if (!localPlayer.IsLocalPlayer) warn("MLFeed doesn't think this is the local player");
     // main loop
     uint lastRespawns = localPlayer.NbRespawnsRequested;
